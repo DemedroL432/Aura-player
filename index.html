@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Aura Player — кроссплатформенный плеер, в котором звучит всё</title>
+<meta name="description" content="Aura Player — красивый десктопный музыкальный плеер на Wails + Go + React. Шесть источников музыки в одном окне, умный fallback потоков, персональная «Моя Волна», 10-полосный эквалайзер, синхронные тексты и живой WebGL-фон." />
+<meta name="theme-color" content="#05060b" />
+<meta property="og:title" content="Aura Player — вся музыка в одном окне" />
+<meta property="og:description" content="Кроссплатформенный плеер на Wails + Go + React: 6 источников, USL Smart Fallback, Моя Волна, эквалайзер, тексты, Discord RPC и WebGL-аура." />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="assets/aura-icon.png" />
+<link rel="icon" type="image/png" href="assets/aura-icon-256.png" />
+<link rel="apple-touch-icon" href="assets/aura-icon-256.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Unbounded:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- ======================= GRAIN + AURA BACKGROUND ======================= -->
+<div class="bg-layer" aria-hidden="true">
+  <canvas id="aura-canvas"></canvas>
+  <div class="bg-blob bg-blob--violet"></div>
+  <div class="bg-blob bg-blob--magenta"></div>
+  <div class="bg-blob bg-blob--cyan"></div>
+  <div class="bg-grain"></div>
+  <div class="bg-grid"></div>
+</div>
+
+<!-- ======================= NAV ======================= -->
+<header class="nav" id="nav">
+  <div class="nav__inner">
+    <a href="#top" class="brand" aria-label="Aura Player — на главную">
+      <span class="brand__mark">
+        <span class="brand__ring"></span>
+        <span class="brand__core"></span>
+      </span>
+      <span class="brand__text">Aura<em>Player</em></span>
+    </a>
+
+    <nav class="nav__links" id="navLinks" aria-label="Основная навигация">
+      <a href="#features">Возможности</a>
+      <a href="#demo">Демо</a>
+      <a href="#interface">Интерфейс</a>
+      <a href="#gallery">Скриншоты</a>
+      <a href="#stack">Технологии</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+
+    <div class="nav__actions">
+      <a class="btn btn--ghost btn--sm nav__ghost" href="#download">Скачать</a>
+      <a class="btn btn--primary btn--sm" href="download/AuraPlayer-1.2-Windows-x64.exe" download>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4.5-4.5M12 15l-4.5-4.5M4 20h16"/></svg>
+        Windows
+      </a>
+      <button class="nav__burger" id="navBurger" aria-label="Меню" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- ======================= HERO ======================= -->
+<section class="hero" id="hero">
+  <div class="container hero__grid">
+    <div class="hero__copy">
+      <span class="pill pill--live reveal">
+        <span class="pill__dot"></span>
+        v1.2 · Wails 2.12 · Go + React
+      </span>
+
+      <h1 class="hero__title reveal" data-delay="1">
+        Вся музыка —<br />
+        <span class="grad-text">в одном окне</span><br />
+        и в одной ауре.
+      </h1>
+
+      <p class="hero__lead reveal" data-delay="2">
+        Aura Player собирает <strong>ВКонтакте, Яндекс Музыку, SoundCloud, YouTube,
+        Deezer и iTunes</strong> в единую библиотеку. Если один источник молчит —
+        умный движок <strong>USL</strong> мгновенно подхватывает трек с другого.
+        Красиво, быстро, без подписок.
+      </p>
+
+      <div class="hero__cta reveal" data-delay="3">
+        <a class="btn btn--primary btn--lg" href="download/AuraPlayer-1.2-Windows-x64.exe" download>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4.5-4.5M12 15l-4.5-4.5M4 20h16"/></svg>
+          Скачать для Windows
+          <span class="btn__meta">13 МБ</span>
+        </a>
+        <a class="btn btn--glass btn--lg" href="#demo">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+          Попробовать демо
+        </a>
+      </div>
+
+      <ul class="hero__facts reveal" data-delay="4">
+        <li><span class="dot dot--green"></span> Без установки и регистрации</li>
+        <li><span class="dot dot--violet"></span> Windows 10/11 x64</li>
+        <li><span class="dot dot--cyan"></span> macOS и Linux — в разработке</li>
+      </ul>
+    </div>
+
+    <!-- App window mock -->
+    <div class="hero__stage reveal" data-delay="2">
+      <div class="app-glow" aria-hidden="true"></div>
+
+      <div class="app" id="heroApp" aria-hidden="true" role="img" aria-label="Схема интерфейса Aura Player: боковое меню, «Моя Волна» и нижняя панель плеера">
+        <div class="app__titlebar">
+          <div class="app__brand">
+            <span class="app__logo"></span>
+            <span>AURA</span>
+          </div>
+          <div class="app__navdots">
+            <i></i><i></i>
+          </div>
+          <div class="app__rpc">
+            <span class="app__rpc-dot"></span> Discord RPC
+          </div>
+          <div class="app__winbtns"><i></i><i></i><i></i></div>
+        </div>
+
+        <div class="app__body">
+          <aside class="app__side">
+            <span class="app__side-label">Навигация</span>
+            <div class="app__side-item"><i class="ico ico--home"></i>Главная</div>
+            <div class="app__side-item is-active"><i class="ico ico--radio"></i>Моя Волна</div>
+            <div class="app__side-item"><i class="ico ico--compass"></i>Поиск музыки</div>
+            <div class="app__side-item"><i class="ico ico--list"></i>Плейлисты<span class="app__badge">3</span></div>
+            <div class="app__side-item"><i class="ico ico--users"></i>Комнаты</div>
+            <div class="app__side-item"><i class="ico ico--mic"></i>Текст песен</div>
+            <span class="app__side-label app__side-label--mt">Инструменты</span>
+            <div class="app__side-item"><i class="ico ico--sliders"></i>Эквалайзер</div>
+            <div class="app__side-item"><i class="ico ico--settings"></i>Настройки</div>
+            <div class="app__side-version"><span>Aura Player</span><span>v1.2</span></div>
+          </aside>
+
+          <div class="app__main">
+            <div class="app__chips">
+              <span class="app__chips-label">Настроение:</span>
+              <span class="chip is-active">Вся музыка</span>
+              <span class="chip">Фонк</span>
+              <span class="chip">Рок</span>
+              <span class="chip">Рэп</span>
+              <span class="chip">Lo-Fi</span>
+            </div>
+
+            <div class="app__orb-wrap">
+              <div class="orb-halo"></div>
+              <div class="orb-ring"></div>
+              <div class="orb">
+                <span class="orb__play" id="heroOrbPlay">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+                </span>
+                <span class="orb__title">Волна активна</span>
+                <span class="orb__sub">Моя Волна · Вся музыка</span>
+              </div>
+            </div>
+
+            <div class="app__nowplaying">
+              <div class="np__cover" id="heroCover"></div>
+              <div class="np__meta">
+                <strong id="heroTrackTitle">Midnight City</strong>
+                <span id="heroTrackArtist">M83 · Hurry Up, We're Dreaming</span>
+              </div>
+              <div class="np__actions">
+                <span class="np__btn">♥</span>
+                <span class="np__btn">⏭</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="app__player">
+          <div class="app__np-mini">
+            <span class="app__np-cover" id="heroMiniCover"></span>
+            <div>
+              <strong id="heroMiniTitle">Midnight City</strong>
+              <span id="heroMiniArtist">M83</span>
+            </div>
+            <span class="app__like">♥</span>
+          </div>
+
+          <div class="app__controls">
+            <div class="app__buttons">
+              <span class="app__iconbtn">⤨</span>
+              <span class="app__iconbtn">⏮</span>
+              <span class="app__playbtn" id="heroPlayBtn">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+              </span>
+              <span class="app__iconbtn">⏭</span>
+              <span class="app__iconbtn">⟳</span>
+            </div>
+            <div class="app__scrub">
+              <span class="app__time" id="heroTimeCur">0:42</span>
+              <span class="app__track"><span class="app__track-fill" id="heroFill"></span></span>
+              <span class="app__time">4:03</span>
+            </div>
+          </div>
+
+          <div class="app__right">
+            <div class="app__bars" id="heroBars" aria-hidden="true"></div>
+            <span class="app__iconbtn">⛭</span>
+            <span class="app__iconbtn">🎤</span>
+            <div class="app__vol">
+              <span class="app__vol-track"><span class="app__vol-fill"></span></span>
+              <span class="app__vol-num">80%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- floating badges -->
+      <div class="float-badge float-badge--1">
+        <span class="fb__ico">⚡</span>
+        <div><strong>Fallback</strong><span>трек спасён с другого источника</span></div>
+      </div>
+      <div class="float-badge float-badge--2">
+        <span class="fb__ico">🎚</span>
+        <div><strong>10 полос EQ</strong><span>ReplayGain · Crossfade</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sources marquee -->
+  <div class="marquee" aria-label="Поддерживаемые источники">
+    <div class="marquee__fade"></div>
+    <div class="marquee__track" id="marqueeTrack">
+      <span class="src">ВКонтакте</span>
+      <span class="src">Яндекс Музыка</span>
+      <span class="src">SoundCloud</span>
+      <span class="src">YouTube</span>
+      <span class="src">Deezer</span>
+      <span class="src">iTunes</span>
+      <span class="src">LRCLIB</span>
+      <span class="src">Discord RPC</span>
+      <span class="src">Локальные файлы</span>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= STATS ======================= -->
+<section class="stats">
+  <div class="container stats__grid">
+    <div class="stat reveal">
+      <span class="stat__num" data-count="6">0</span>
+      <span class="stat__label">источников музыки<br />в одном поиске</span>
+    </div>
+    <div class="stat reveal" data-delay="1">
+      <span class="stat__num" data-count="11">0</span>
+      <span class="stat__label">жанровых фильтров<br />«Моей Волны»</span>
+    </div>
+    <div class="stat reveal" data-delay="2">
+      <span class="stat__num" data-count="10">0</span>
+      <span class="stat__label">полос<br />эквалайзера</span>
+    </div>
+    <div class="stat reveal" data-delay="3">
+      <span class="stat__num" data-count="75" data-suffix="%">0</span>
+      <span class="stat__label">предзагрузка<br />следующего трека</span>
+    </div>
+    <div class="stat reveal" data-delay="4">
+      <span class="stat__num" data-count="144" data-suffix=" FPS">0</span>
+      <span class="stat__label">живой WebGL-фон<br />реагирует на бас</span>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= FEATURES ======================= -->
+<section class="section" id="features">
+  <div class="container">
+    <header class="section__head reveal">
+      <span class="eyebrow">Возможности</span>
+      <h2 class="section__title">Не просто плеер.<br /><span class="grad-text">Аудио-движок.</span></h2>
+      <p class="section__lead">
+        Aura Player написан с нуля на Go и React. Внутри — единый слой источников,
+        собственный аудио-конвейер с Web Audio API и движок рекомендаций, который учится на ваших лайках.
+      </p>
+    </header>
+
+    <div class="bento">
+      <!-- Big card: USL -->
+      <article class="card card--wide reveal tilt">
+        <div class="card__glow"></div>
+        <div class="card__body">
+          <span class="card__tag">USL · Unified Source Layer</span>
+          <h3>Умный fallback: трек никогда не обрывается</h3>
+          <p>
+            Один трек — до шести потенциальных потоков. Aura определяет доступность источника,
+            чистит названия от «(Official Video)» и математических юникод-шрифтов, кэширует прямые
+            ссылки в RAM и при ошибке <strong>сама переразрешает поток</strong> без вашего участия.
+          </p>
+          <div class="chain" aria-hidden="true">
+            <span class="chain__node is-ok">VK</span>
+            <span class="chain__link"></span>
+            <span class="chain__node is-fail">SoundCloud</span>
+            <span class="chain__link chain__link--active"></span>
+            <span class="chain__node is-active">YouTube</span>
+            <span class="chain__link"></span>
+            <span class="chain__node">Deezer</span>
+            <span class="chain__link"></span>
+            <span class="chain__node">iTunes</span>
+          </div>
+          <div class="chain__caption">
+            <span class="pulse-dot"></span>
+            <span id="chainStatus">YouTube — поток найден за 0.4 с</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- Wave -->
+      <article class="card reveal tilt" data-delay="1">
+        <div class="card__glow card__glow--pink"></div>
+        <div class="card__body">
+          <span class="card__icon">🌊</span>
+          <h3>Моя Волна</h3>
+          <p>
+            Бесконечный персональный поток. Профиль вкуса из лайков, жанров и исполнителей,
+            буфер из 5 треков и 11 настроек жанра — от фонка до классики.
+          </p>
+          <div class="mini-chips">
+            <span>Фонк</span><span>Рок</span><span>Рэп</span><span>Lo-Fi</span><span>Синтвейв</span><span>+6</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- Fluid aura -->
+      <article class="card reveal tilt" data-delay="2">
+        <div class="card__glow card__glow--cyan"></div>
+        <div class="card__body">
+          <span class="card__icon">✨</span>
+          <h3>Fluid Aura</h3>
+          <p>
+            WebGL-шейдер на симплекс-шуме, цвета берутся из обложки трека, яркость
+            дышит в такт басу через FFT-анализ. Честные 60–144 FPS.
+          </p>
+          <div class="wave-bars" aria-hidden="true">
+            <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+          </div>
+        </div>
+      </article>
+
+      <!-- EQ -->
+      <article class="card reveal tilt" data-delay="3">
+        <div class="card__glow"></div>
+        <div class="card__body">
+          <span class="card__icon">🎚</span>
+          <h3>Эквалайзер и DSP</h3>
+          <p>
+            10 полос от 31 Гц до 16 кГц, готовые пресеты, ReplayGain-нормализация до −14 LUFS,
+            кроссфейд до 12 секунд и gapless-воспроизведение.
+          </p>
+          <div class="eq" aria-hidden="true">
+            <i style="--h:38%"></i><i style="--h:62%"></i><i style="--h:84%"></i><i style="--h:52%"></i>
+            <i style="--h:70%"></i><i style="--h:44%"></i><i style="--h:76%"></i><i style="--h:58%"></i>
+            <i style="--h:34%"></i><i style="--h:66%"></i>
+          </div>
+        </div>
+      </article>
+
+      <!-- Lyrics -->
+      <article class="card reveal tilt" data-delay="4">
+        <div class="card__glow card__glow--pink"></div>
+        <div class="card__body">
+          <span class="card__icon">🎤</span>
+          <h3>Караоке-тексты</h3>
+          <p>
+            Синхронные LRC-строки из LRCLIB подсвечиваются в такт музыке.
+            Клик по строке — переход к нужному моменту трека.
+          </p>
+          <div class="lyrics" aria-hidden="true">
+            <span>Мы летим над городом</span>
+            <span class="is-current">и музыка нас держит</span>
+            <span>на самой тонкой ноте</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- Discord -->
+      <article class="card reveal tilt" data-delay="5">
+        <div class="card__glow card__glow--cyan"></div>
+        <div class="card__body">
+          <span class="card__icon">🟣</span>
+          <h3>Discord Rich Presence</h3>
+          <p>
+            Обложка, название, исполнитель и живой прогресс-бар прямо в профиле.
+            Статус переподключается автоматически, если Discord перезапустился.
+          </p>
+          <div class="rpc-card" aria-hidden="true">
+            <span class="rpc-card__cover"></span>
+            <div>
+              <strong>Слушает Aura Player</strong>
+              <span>Midnight City — M83</span>
+              <span class="rpc-card__bar"><i></i></span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Library -->
+      <article class="card reveal tilt" data-delay="6">
+        <div class="card__glow"></div>
+        <div class="card__body">
+          <span class="card__icon">📁</span>
+          <h3>Локальная библиотека</h3>
+          <p>
+            Сканирование папок, чтение ID3-тегов и встроенных обложек, плейлисты и «Любимые треки» —
+            всё рядом с онлайн-музыкой.
+          </p>
+          <div class="tags"><span>MP3</span><span>FLAC</span><span>M4A</span><span>OGG</span><span>WAV</span></div>
+        </div>
+      </article>
+
+      <!-- Mini player -->
+      <article class="card reveal tilt" data-delay="7">
+        <div class="card__glow card__glow--pink"></div>
+        <div class="card__body">
+          <span class="card__icon">🪟</span>
+          <h3>Мини-плеер и горячие клавиши</h3>
+          <p>
+            Компактный HUD-режим 380×160 поверх всех окон, закрепление окна,
+            полноценные медиа-клавиши и управление с клавиатуры.
+          </p>
+          <ul class="keys">
+            <li><kbd>Space</kbd><span>плей / пауза</span></li>
+            <li><kbd>←</kbd><kbd>→</kbd><span>±5 секунд</span></li>
+            <li><kbd>↑</kbd><kbd>↓</kbd><span>громкость</span></li>
+            <li><kbd>M</kbd><span>mute</span></li>
+            <li><kbd>L</kbd><span>лайк</span></li>
+          </ul>
+          <div class="themes" aria-hidden="true">
+            <span class="theme theme--glass is-active">Glass Dark</span>
+            <span class="theme theme--oled">OLED</span>
+            <span class="theme theme--cyber">Cyberpunk</span>
+          </div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= DEMO ======================= -->
+<section class="section section--demo" id="demo">
+  <div class="container">
+    <header class="section__head section__head--center reveal">
+      <span class="eyebrow">Интерактивное демо</span>
+      <h2 class="section__title">Нажмите на трек —<br /><span class="grad-text">аура подстроится</span></h2>
+      <p class="section__lead">
+        Так работает плеер: цвет фона вычисляется из обложки, полосы спектра танцуют,
+        а прогресс можно перематывать. Всё это — реальный код Aura Player, только в браузере.
+      </p>
+    </header>
+
+    <div class="demo reveal" id="demoPlayer">
+      <div class="demo__stage">
+        <div class="demo__aura" id="demoAura"></div>
+        <div class="demo__cover" id="demoCover">
+          <span class="demo__cover-glow"></span>
+        </div>
+        <div class="demo__info">
+          <span class="demo__source" id="demoSource">YouTube</span>
+          <h3 id="demoTitle">Midnight City</h3>
+          <p id="demoArtist">M83 · Hurry Up, We're Dreaming</p>
+        </div>
+        <div class="demo__visualizer" id="demoVisualizer" aria-hidden="true"></div>
+      </div>
+
+      <div class="demo__panel">
+        <div class="demo__progress" id="demoProgress" role="slider" aria-label="Позиция трека" aria-valuemin="0" aria-valuemax="100" aria-valuenow="30" tabindex="0">
+          <span class="demo__progress-fill" id="demoProgressFill"></span>
+          <span class="demo__progress-knob" id="demoProgressKnob"></span>
+        </div>
+        <div class="demo__times">
+          <span id="demoCur">1:12</span>
+          <span id="demoDur">4:03</span>
+        </div>
+
+        <div class="demo__buttons">
+          <button class="demo__ctrl" id="demoShuffle" aria-label="Перемешать">
+            <svg viewBox="0 0 24 24"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+          </button>
+          <button class="demo__ctrl" id="demoPrev" aria-label="Предыдущий трек">
+            <svg viewBox="0 0 24 24"><path d="M19 20 9 12l10-8v16zM5 19V5"/></svg>
+          </button>
+          <button class="demo__play" id="demoPlay" aria-label="Воспроизведение">
+            <svg viewBox="0 0 24 24" class="i-play"><path d="M8 5v14l11-7z"/></svg>
+            <svg viewBox="0 0 24 24" class="i-pause"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>
+          </button>
+          <button class="demo__ctrl" id="demoNext" aria-label="Следующий трек">
+            <svg viewBox="0 0 24 24"><path d="M5 4l10 8-10 8V4zM19 5v14"/></svg>
+          </button>
+          <button class="demo__ctrl" id="demoLike" aria-label="Мне нравится">
+            <svg viewBox="0 0 24 24"><path d="M12 21s-7-4.6-9.2-8.3C1 9.3 2.6 5.5 6.3 5.1c2.1-.2 3.6 1 5.7 3 2.1-2 3.6-3.2 5.7-3 3.7.4 5.3 4.2 3.5 7.6C19 16.4 12 21 12 21z"/></svg>
+          </button>
+        </div>
+
+        <div class="demo__list" id="demoList" role="list"></div>
+
+        <div class="demo__hint">
+          <span class="pulse-dot"></span>
+          Демонстрационный режим: звук не воспроизводится, анимация повторяет реальное поведение плеера.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= INTERFACE / SCREENSHOTS ======================= -->
+<section class="section" id="interface">
+  <div class="container">
+    <header class="section__head reveal">
+      <span class="eyebrow">Интерфейс</span>
+      <h2 class="section__title">Тёмное стекло,<br /><span class="grad-text">неоновые акценты</span></h2>
+      <p class="section__lead">
+        Полностью кастомный интерфейс без нативных рамок: Mica-подложка Windows, размытие,
+        собственная типографика и три темы на выбор.
+      </p>
+    </header>
+
+    <div class="tabs reveal" role="tablist" aria-label="Экраны приложения">
+      <button class="tab is-active" role="tab" aria-selected="true" data-screen="home">Главная</button>
+      <button class="tab" role="tab" aria-selected="false" data-screen="wave">Моя Волна</button>
+      <button class="tab" role="tab" aria-selected="false" data-screen="eq">Эквалайзер</button>
+      <button class="tab" role="tab" aria-selected="false" data-screen="lyrics">Текст песни</button>
+    </div>
+
+    <div class="screens reveal">
+      <!-- SCREEN: HOME -->
+      <div class="screen is-active" data-screen="home">
+        <div class="screen__chrome">
+          <span class="screen__dots"><i></i><i></i><i></i></span>
+          <span class="screen__title">Aura — Unified Cross-Platform Audio Player</span>
+        </div>
+        <div class="screen__inner">
+          <div class="sh-head">
+            <div>
+              <span class="sh-eyebrow">Aura Player · Обзор</span>
+              <h4>Добрый вечер</h4>
+            </div>
+            <span class="sh-wavebtn">◉ Включить Волну</span>
+          </div>
+
+          <div class="sh-quick">
+            <div class="sh-quickcard"><span class="sh-qc-icon sh-qc-icon--pink">♥</span><div><strong>Любимые треки</strong><span>128 треков</span></div></div>
+            <div class="sh-quickcard"><span class="sh-qc-icon sh-qc-icon--blue">◉</span><div><strong>Моя Волна</strong><span>Бесконечный поток</span></div></div>
+            <div class="sh-quickcard"><span class="sh-qc-icon sh-qc-icon--purple">⚡</span><div><strong>Phonk &amp; Drift</strong><span>Мощный бас</span></div></div>
+            <div class="sh-quickcard"><span class="sh-qc-icon sh-qc-icon--red">🔥</span><div><strong>Рок Хиты</strong><span>Классика и альтернатива</span></div></div>
+            <div class="sh-quickcard"><span class="sh-qc-icon sh-qc-icon--amber">☕</span><div><strong>Lo-Fi Chill</strong><span>Успокаивающие биты</span></div></div>
+            <div class="sh-quickcard"><span class="sh-qc-icon sh-qc-icon--cyan">💿</span><div><strong>Cyberpunk &amp; Synth</strong><span>Неон и ретро-синты</span></div></div>
+          </div>
+
+          <div class="sh-row">
+            <h5>Недавно прослушано</h5>
+          </div>
+          <div class="sh-grid">
+            <div class="sh-tile"><span class="sh-art" style="--c1:#5b6bff;--c2:#c04bff"></span><strong>Blinding Lights</strong><span>The Weeknd</span></div>
+            <div class="sh-tile"><span class="sh-art" style="--c1:#ff4d6d;--c2:#ff9e00"></span><strong>In the End</strong><span>Linkin Park</span></div>
+            <div class="sh-tile"><span class="sh-art" style="--c1:#00c2ff;--c2:#6a5cff"></span><strong>Nightcall</strong><span>Kavinsky</span></div>
+            <div class="sh-tile"><span class="sh-art" style="--c1:#ff2e88;--c2:#7a5cff"></span><strong>Midnight City</strong><span>M83</span></div>
+            <div class="sh-tile"><span class="sh-art" style="--c1:#22d3ee;--c2:#3b82f6"></span><strong>Starboy</strong><span>The Weeknd</span></div>
+            <div class="sh-tile"><span class="sh-art" style="--c1:#a3e635;--c2:#0ea5e9"></span><strong>Лесник</strong><span>Король и Шут</span></div>
+          </div>
+
+          <div class="sh-row"><h5>Чарты и мировые хиты</h5><span class="sh-link">Слушать весь чарт</span></div>
+          <div class="sh-charts">
+            <div class="sh-chart"><span class="sh-num">1</span><span class="sh-mini" style="--c1:#ff4d6d;--c2:#ff9e00"></span><div><strong>In the End</strong><span>Linkin Park</span></div><span class="sh-dur">3:36</span></div>
+            <div class="sh-chart"><span class="sh-num">2</span><span class="sh-mini" style="--c1:#5b6bff;--c2:#c04bff"></span><div><strong>Blinding Lights</strong><span>The Weeknd</span></div><span class="sh-dur">3:20</span></div>
+            <div class="sh-chart"><span class="sh-num">3</span><span class="sh-mini" style="--c1:#00c2ff;--c2:#6a5cff"></span><div><strong>Nightcall</strong><span>Kavinsky</span></div><span class="sh-dur">4:18</span></div>
+            <div class="sh-chart"><span class="sh-num">4</span><span class="sh-mini" style="--c1:#ff2e88;--c2:#7a5cff"></span><div><strong>Midnight City</strong><span>M83</span></div><span class="sh-dur">4:03</span></div>
+          </div>
+        </div>
+        <div class="screen__player">
+          <div class="sp-left">
+            <span class="sp-cover"></span>
+            <div><strong>Midnight City</strong><span>M83</span><em>youtube</em></div>
+            <span class="sp-heart">♥</span>
+          </div>
+          <div class="sp-center">
+            <div class="sp-buttons"><i>⤨</i><i>⏮</i><b>▶</b><i>⏭</i><i>⟳</i></div>
+            <div class="sp-scrub"><span>1:12</span><span class="sp-track"><i style="width:30%"></i></span><span>4:03</span></div>
+          </div>
+          <div class="sp-right">
+            <div class="sp-bars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            <i>⛭</i><i>🎤</i><span class="sp-vol"><i></i></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN: WAVE -->
+      <div class="screen" data-screen="wave">
+        <div class="screen__chrome">
+          <span class="screen__dots"><i></i><i></i><i></i></span>
+          <span class="screen__title">Aura — Моя Волна</span>
+        </div>
+        <div class="screen__inner screen__inner--center">
+          <div class="sw-chips">
+            <span class="chip">Вся музыка</span><span class="chip is-active">Фонк</span><span class="chip">Рок</span>
+            <span class="chip">Рэп &amp; Хип-хоп</span><span class="chip">Поп</span><span class="chip">Электроника</span><span class="chip">Lo-Fi Chill</span>
+          </div>
+          <div class="sw-orbwrap">
+            <div class="sw-halo"></div>
+            <div class="sw-ring"></div>
+            <div class="sw-orb">
+              <span class="sw-orbplay">▶</span>
+              <strong>Волна активна</strong>
+              <em>Моя Волна · Фонк</em>
+            </div>
+          </div>
+          <div class="sw-card">
+            <span class="sw-cover"></span>
+            <div><strong>Metamorphosis</strong><span>Interworld</span></div>
+            <span class="sw-actions">♥ ⏭</span>
+          </div>
+          <span class="sw-badge">✦ Режим бесконечного персонального вещания</span>
+        </div>
+        <div class="screen__player">
+          <div class="sp-left"><span class="sp-cover"></span><div><strong>Metamorphosis</strong><span>Interworld</span><em>soundcloud</em></div><span class="sp-heart">♥</span></div>
+          <div class="sp-center">
+            <div class="sp-buttons"><i>⤨</i><i>⏮</i><b>⏸</b><i>⏭</i><i>⟳</i></div>
+            <div class="sp-scrub"><span>2:04</span><span class="sp-track"><i style="width:52%"></i></span><span>3:52</span></div>
+          </div>
+          <div class="sp-right"><div class="sp-bars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><i>⛭</i><i>🎤</i><span class="sp-vol"><i></i></span></div>
+        </div>
+      </div>
+
+      <!-- SCREEN: EQ -->
+      <div class="screen" data-screen="eq">
+        <div class="screen__chrome">
+          <span class="screen__dots"><i></i><i></i><i></i></span>
+          <span class="screen__title">Aura — Audio DSP &amp; Equalizer</span>
+        </div>
+        <div class="screen__inner screen__inner--eq">
+          <div class="se-head">
+            <span class="se-ico">🎚</span>
+            <div><h4>Audio DSP &amp; Equalizer</h4><p>10-band parametric EQ &amp; Volume Normalization</p></div>
+            <span class="se-close">✕</span>
+          </div>
+          <div class="se-presets">
+            <span class="se-preset is-active">Flat</span><span class="se-preset">Bass Boost</span>
+            <span class="se-preset">Vocal Clarity</span><span class="se-preset">Rock &amp; Metal</span>
+            <span class="se-preset">Electronic</span><span class="se-preset">Custom Profile</span>
+          </div>
+          <div class="se-eq">
+            <div class="se-band"><span>+6dB</span><i style="--v:70%"></i><em>31</em></div>
+            <div class="se-band"><span>+4dB</span><i style="--v:62%"></i><em>62</em></div>
+            <div class="se-band"><span>+2dB</span><i style="--v:56%"></i><em>125</em></div>
+            <div class="se-band"><span>0dB</span><i style="--v:50%"></i><em>250</em></div>
+            <div class="se-band"><span>-2dB</span><i style="--v:44%"></i><em>500</em></div>
+            <div class="se-band"><span>0dB</span><i style="--v:50%"></i><em>1k</em></div>
+            <div class="se-band"><span>+3dB</span><i style="--v:59%"></i><em>2k</em></div>
+            <div class="se-band"><span>+5dB</span><i style="--v:65%"></i><em>4k</em></div>
+            <div class="se-band"><span>+2dB</span><i style="--v:56%"></i><em>8k</em></div>
+            <div class="se-band"><span>-1dB</span><i style="--v:47%"></i><em>16k</em></div>
+          </div>
+          <div class="se-toggles">
+            <div class="se-toggle is-on"><strong>ReplayGain</strong><span>Auto-normalizes loudness to −14 LUFS</span></div>
+            <div class="se-toggle"><strong>Crossfade · 6s</strong><span>Smooth transition between tracks</span></div>
+            <div class="se-toggle is-on"><strong>Gapless</strong><span>Zero-delay prebuffered playback</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN: LYRICS -->
+      <div class="screen" data-screen="lyrics">
+        <div class="screen__chrome">
+          <span class="screen__dots"><i></i><i></i><i></i></span>
+          <span class="screen__title">Aura — Текст песни</span>
+        </div>
+        <div class="screen__inner screen__inner--center">
+          <div class="sl-head">
+            <span class="sl-cover"></span>
+            <div><h4>Midnight City</h4><p>M83 · Hurry Up, We're Dreaming</p></div>
+          </div>
+          <div class="sl-lyrics">
+            <span>Waiting for a ride in the dark</span>
+            <span>Night city grows, look at the lights</span>
+            <span class="is-current">The city is my church</span>
+            <span>It wraps me in its blinding twilight</span>
+            <span>Waiting for a ride in the dark</span>
+            <span>Waiting in the car, waiting for a ride</span>
+          </div>
+          <div class="sl-progress"><span><i style="width:46%"></i></span><em>2:18 / 4:03</em></div>
+        </div>
+        <div class="screen__player">
+          <div class="sp-left"><span class="sp-cover"></span><div><strong>Midnight City</strong><span>M83</span><em>youtube</em></div><span class="sp-heart">♥</span></div>
+          <div class="sp-center">
+            <div class="sp-buttons"><i>⤨</i><i>⏮</i><b>⏸</b><i>⏭</i><i>⟳</i></div>
+            <div class="sp-scrub"><span>2:18</span><span class="sp-track"><i style="width:46%"></i></span><span>4:03</span></div>
+          </div>
+          <div class="sp-right"><div class="sp-bars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><i>⛭</i><i>🎤</i><span class="sp-vol"><i></i></span></div>
+        </div>
+      </div>
+    </div>
+
+    <p class="screens__note reveal">
+      UI-реконструкция экранов Aura Player: те же компоненты, сетки и палитра, что и в приложении.
+    </p>
+  </div>
+</section>
+
+<!-- ======================= REAL SCREENSHOTS ======================= -->
+<section class="section section--gallery" id="gallery">
+  <div class="container">
+    <header class="section__head reveal">
+      <span class="eyebrow">Скриншоты</span>
+      <h2 class="section__title">Так выглядит<br /><span class="grad-text">настоящий плеер</span></h2>
+      <p class="section__lead">
+        Реальные кадры работающего приложения v1.2 под Windows. Нажмите на любой,
+        чтобы рассмотреть детали интерфейса.
+      </p>
+    </header>
+
+    <div class="gallery">
+      <button class="shot shot--wide reveal" data-full="assets/screens/screen-home.webp" data-caption="Главная: приветствие, быстрый доступ и чарты">
+        <img src="assets/screens/screen-home.webp" alt="Главный экран Aura Player с приветствием, быстрым доступом и чартами" loading="lazy" width="1148" height="758" />
+        <span class="shot__label">Главная</span>
+        <span class="shot__zoom">⤢</span>
+      </button>
+
+      <button class="shot reveal" data-delay="1" data-full="assets/screens/screen-playlists.webp" data-caption="Плейлисты, любимые треки и локальная библиотека">
+        <img src="assets/screens/screen-playlists.webp" alt="Экран плейлистов и любимых треков в Aura Player" loading="lazy" width="1148" height="758" />
+        <span class="shot__label">Плейлисты</span>
+        <span class="shot__zoom">⤢</span>
+      </button>
+
+      <button class="shot reveal" data-delay="2" data-full="assets/screens/screen-wave.webp" data-caption="«Моя Волна»: бесконечный поток с жанровыми фильтрами">
+        <img src="assets/screens/screen-wave.webp" alt="Экран «Моя Волна» с центральной кнопкой запуска и жанровыми фильтрами" loading="lazy" width="1148" height="758" />
+        <span class="shot__label">Моя Волна</span>
+        <span class="shot__zoom">⤢</span>
+      </button>
+
+      <button class="shot reveal" data-delay="2" data-full="assets/screens/screen-search.webp" data-caption="Поиск по шести источникам одновременно">
+        <img src="assets/screens/screen-search.webp" alt="Экран поиска музыки по нескольким источникам" loading="lazy" width="1148" height="758" />
+        <span class="shot__label">Поиск музыки</span>
+        <span class="shot__zoom">⤢</span>
+      </button>
+
+      <button class="shot reveal" data-delay="3" data-full="assets/screens/screen-social.webp" data-caption="Комнаты и совместное прослушивание">
+        <img src="assets/screens/screen-social.webp" alt="Экран комнат и совместного прослушивания" loading="lazy" width="1148" height="758" />
+        <span class="shot__label">Комнаты &amp; Друзья</span>
+        <span class="shot__zoom">⤢</span>
+      </button>
+
+      <button class="shot shot--wide reveal" data-delay="4" data-full="assets/screens/screen-equalizer.webp" data-caption="10-полосный эквалайзер, ReplayGain и кроссфейд">
+        <img src="assets/screens/screen-equalizer.webp" alt="Модальное окно эквалайзера с 10 полосами и DSP-настройками" loading="lazy" width="1148" height="758" />
+        <span class="shot__label">Эквалайзер &amp; DSP</span>
+        <span class="shot__zoom">⤢</span>
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Просмотр скриншота">
+  <button class="lightbox__close" id="lightboxClose" aria-label="Закрыть">✕</button>
+  <figure class="lightbox__figure">
+    <img id="lightboxImg" alt="" />
+    <figcaption id="lightboxCaption"></figcaption>
+  </figure>
+</div>
+
+<!-- ======================= STACK ======================= -->
+<section class="section" id="stack">
+  <div class="container">
+    <header class="section__head reveal">
+      <span class="eyebrow">Технологии</span>
+      <h2 class="section__title">Нативная оболочка,<br /><span class="grad-text">веб-интерфейс</span></h2>
+      <p class="section__lead">
+        Aura Player — это Wails v2: Go-бэкенд и React-фронтенд в одном исполняемом файле
+        весом 13 МБ. Без Electron, без лишних мегабайт, с прямым доступом к системе.
+      </p>
+    </header>
+
+    <div class="stack">
+      <div class="stack__card reveal tilt">
+        <span class="stack__logo">◆</span>
+        <h4>Wails v2</h4>
+        <p>Оболочка с нативным окном, Mica-подложкой и мостом Go ↔ JS.</p>
+      </div>
+      <div class="stack__card reveal tilt" data-delay="1">
+        <span class="stack__logo">GO</span>
+        <h4>Go 1.26</h4>
+        <p>Параллельный поиск, кэш потоков в RAM, fallback-резолвинг.</p>
+      </div>
+      <div class="stack__card reveal tilt" data-delay="2">
+        <span class="stack__logo">⚛</span>
+        <h4>React + TypeScript</h4>
+        <p>Компонентный UI, строгие типы, предсказуемое состояние.</p>
+      </div>
+      <div class="stack__card reveal tilt" data-delay="3">
+        <span class="stack__logo">⚡</span>
+        <h4>Vite</h4>
+        <p>Мгновенная горячая перезагрузка и компактный бандл.</p>
+      </div>
+      <div class="stack__card reveal tilt" data-delay="4">
+        <span class="stack__logo">🎨</span>
+        <h4>Tailwind CSS</h4>
+        <p>Дизайн-система со стеклянными панелями и тремя темами.</p>
+      </div>
+      <div class="stack__card reveal tilt" data-delay="5">
+        <span class="stack__logo">◈</span>
+        <h4>WebGL + Web Audio</h4>
+        <p>Шейдерная аура, FFT-анализ и DSP-граф в реальном времени.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= DOWNLOAD ======================= -->
+<section class="section section--download" id="download">
+  <div class="container">
+    <div class="download reveal">
+      <div class="download__glow" aria-hidden="true"></div>
+
+      <div class="download__left">
+        <span class="pill"><span class="pill__dot"></span> Версия 1.2 · сборка для Windows</span>
+        <h2>Скачайте Aura Player<br /><span class="grad-text">и включите Волну</span></h2>
+        <p>
+          Один файл, никакой установки и регистрации. Распакуйте, запустите —
+          и вся музыка из шести источников окажется в одном окне.
+        </p>
+
+        <div class="download__cta">
+          <a class="btn btn--primary btn--xl" href="download/AuraPlayer-1.2-Windows-x64.exe" download id="downloadBtn">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4.5-4.5M12 15l-4.5-4.5M4 20h16"/></svg>
+            Скачать Aura Player
+            <span class="btn__meta">Windows 10/11 · x64</span>
+          </a>
+          <span class="download__size" id="downloadSize">13 МБ · .exe</span>
+        </div>
+
+        <div class="steps">
+          <div class="step">
+            <span class="step__num">1</span>
+            <div><strong>Скачайте .exe</strong><span>13 МБ, один файл без установки</span></div>
+          </div>
+          <div class="step">
+            <span class="step__num">2</span>
+            <div><strong>Запустите</strong><span>SmartScreen → «Выполнить в любом случае»</span></div>
+          </div>
+          <div class="step">
+            <span class="step__num">3</span>
+            <div><strong>Включите Волну</strong><span>Без регистрации и подписки</span></div>
+          </div>
+        </div>
+
+        <ul class="download__specs">
+          <li><span>Платформа</span><strong>Windows 10 / 11 (x64)</strong></li>
+          <li><span>Размер</span><strong>13 МБ</strong></li>
+          <li><span>Зависимости</span><strong>WebView2 (есть в Windows 11)</strong></li>
+          <li><span>macOS / Linux</span><strong>Сборка в разработке</strong></li>
+        </ul>
+
+        <p class="download__note">
+          ⚠️ Windows SmartScreen может показать предупреждение — файл не подписан
+          сертификатом. Нажмите «Подробнее» → «Выполнить в любом случае».
+        </p>
+      </div>
+
+      <div class="download__right">
+        <div class="os-list">
+          <div class="os is-ready">
+            <span class="os__ico">🪟</span>
+            <div><strong>Windows</strong><span>x64 · .exe</span></div>
+            <a class="os__btn" href="download/AuraPlayer-1.2-Windows-x64.exe" download>Скачать</a>
+          </div>
+          <div class="os is-soon">
+            <span class="os__ico">🍎</span>
+            <div><strong>macOS</strong><span>Apple Silicon · Intel</span></div>
+            <span class="os__btn os__btn--disabled">Скоро</span>
+          </div>
+          <div class="os is-soon">
+            <span class="os__ico">🐧</span>
+            <div><strong>Linux</strong><span>.deb · AppImage</span></div>
+            <span class="os__btn os__btn--disabled">Скоро</span>
+          </div>
+        </div>
+
+        <div class="download__terminal" aria-hidden="true">
+          <div class="term__bar"><i></i><i></i><i></i><span>aura — zsh</span></div>
+          <pre><span class="term__prompt">$</span> ./AuraPlayer --version
+<span class="term__out">Aura Unified Player v1.2</span>
+<span class="term__prompt">$</span> ./AuraPlayer
+<span class="term__ok">✓</span> USL warmup · 6 sources ready
+<span class="term__ok">✓</span> Discord RPC connected
+<span class="term__ok">✓</span> Fluid Aura shader compiled
+<span class="term__cursor"></span></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= FAQ ======================= -->
+<section class="section" id="faq">
+  <div class="container container--narrow">
+    <header class="section__head section__head--center reveal">
+      <span class="eyebrow">Вопросы</span>
+      <h2 class="section__title">Коротко о главном</h2>
+    </header>
+
+    <div class="faq">
+      <details class="faq__item reveal" open>
+        <summary>Что такое USL и зачем он нужен?<span class="faq__plus"></span></summary>
+        <div class="faq__body">
+          <p>
+            USL (Unified Source Layer) — собственный слой Aura Player. Он приводит названия треков
+            к единому виду, параллельно опрашивает источники, ранжирует результаты по релевантности
+            и хранит прямые ссылки на потоки в RAM-кэше. Если ссылка протухла, плеер сам
+            переразрешает её с другого источника — музыка не останавливается.
+          </p>
+        </div>
+      </details>
+
+      <details class="faq__item reveal">
+        <summary>Нужен ли аккаунт или подписка?<span class="faq__plus"></span></summary>
+        <div class="faq__body">
+          <p>
+            Нет. Aura Player не требует регистрации: поиск идёт по публичным каталогам.
+            Опционально можно подключить токен Яндекс Музыки в настройках — тогда расширится
+            выбор источников для ваших треков.
+          </p>
+        </div>
+      </details>
+
+      <details class="faq__item reveal">
+        <summary>Как работает «Моя Волна»?<span class="faq__plus"></span></summary>
+        <div class="faq__body">
+          <p>
+            TasteEngine собирает профиль вкуса из лайков, прослушиваний, жанров и исполнителей,
+            держит буфер из пяти следующих треков и подмешивает новые. Предзагрузка следующего
+            потока стартует на 75 % текущего трека — переключение происходит без паузы.
+          </p>
+        </div>
+      </details>
+
+      <details class="faq__item reveal">
+        <summary>Можно ли слушать свою музыку с диска?<span class="faq__plus"></span></summary>
+        <div class="faq__body">
+          <p>
+            Да. Выберите папку — Aura просканирует её, прочитает ID3-теги, вытащит встроенные
+            обложки и добавит треки в общую библиотеку рядом с онлайн-музыкой.
+          </p>
+        </div>
+      </details>
+
+      <details class="faq__item reveal">
+        <summary>Почему файл весит всего 13 МБ?<span class="faq__plus"></span></summary>
+        <div class="faq__body">
+          <p>
+            Приложение собрано на Wails: Go-бэкенд компилируется в нативный бинарник, а интерфейс
+            рендерится системным WebView2 вместо полноценного Chromium, как в Electron.
+            Отсюда и вес, и быстрый старт.
+          </p>
+        </div>
+      </details>
+
+      <details class="faq__item reveal">
+        <summary>Когда будут версии для macOS и Linux?<span class="faq__plus"></span></summary>
+        <div class="faq__body">
+          <p>
+            Кодовая база кроссплатформенная (Wails поддерживает все три ОС), сейчас готовы
+            Windows-сборки. Следите за обновлениями — релизы для macOS и Linux появятся здесь же.
+          </p>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= CTA ======================= -->
+<section class="cta-band">
+  <div class="container cta-band__inner reveal">
+    <h2>Готовы услышать<br /><span class="grad-text">свою ауру?</span></h2>
+    <a class="btn btn--primary btn--lg" href="download/AuraPlayer-1.2-Windows-x64.exe" download>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4.5-4.5M12 15l-4.5-4.5M4 20h16"/></svg>
+      Скачать бесплатно
+    </a>
+  </div>
+</section>
+
+</main>
+
+<footer class="footer">
+  <div class="container footer__inner">
+    <div class="footer__brand">
+      <a href="#top" class="brand">
+        <span class="brand__mark"><span class="brand__ring"></span><span class="brand__core"></span></span>
+        <span class="brand__text">Aura<em>Player</em></span>
+      </a>
+      <p>Кроссплатформенный музыкальный плеер на Wails, Go и React.</p>
+    </div>
+    <div class="footer__col">
+      <h5>Продукт</h5>
+      <a href="#features">Возможности</a>
+      <a href="#demo">Демо</a>
+      <a href="#interface">Интерфейс</a>
+      <a href="#gallery">Скриншоты</a>
+      <a href="#download">Скачать</a>
+    </div>
+    <div class="footer__col">
+      <h5>Ресурсы</h5>
+      <a href="#gallery">Скриншоты</a>
+      <a href="#stack">Технологии</a>
+      <a href="#faq">FAQ</a>
+      <a href="download/AuraPlayer-1.2-Windows-x64.exe" download>Релиз v1.2</a>
+    </div>
+    <div class="footer__col">
+      <h5>Сделано на</h5>
+      <span>Wails v2 · Go 1.26</span>
+      <span>React + TypeScript</span>
+      <span>WebGL · Web Audio API</span>
+    </div>
+  </div>
+  <div class="container footer__bottom">
+    <span>© <span id="year">2026</span> Aura Player. Демонстрационный сайт продукта.</span>
+    <span class="footer__badge"><span class="dot dot--green"></span> v1.2 · стабильная сборка</span>
+  </div>
+</footer>
+
+<script src="js/main.js" defer></script>
+</body>
+</html>
